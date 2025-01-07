@@ -1,37 +1,32 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
-import { VALIDATION_PIPE_OPTIONS } from './common/constants';
-import { HttpExceptionFilter } from './common/filters/http-exception.filter';
-import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // Global pipes
-  app.useGlobalPipes(new ValidationPipe(VALIDATION_PIPE_OPTIONS));
+  // Enable CORS for frontend
+  app.enableCors({
+    origin: process.env.FRONTEND_URL || 'http://localhost:5173', // Vue.js dev server default port
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    credentials: true,
+  });
 
-  // Global filters
-  app.useGlobalFilters(new HttpExceptionFilter());
+  // Global validation pipe
+  app.useGlobalPipes(new ValidationPipe());
 
-  // Global interceptors
-  app.useGlobalInterceptors(new TransformInterceptor());
-
-  // API prefix
-  app.setGlobalPrefix('api');
-
-  // Swagger configuration
+  // Swagger documentation
   const config = new DocumentBuilder()
-    .setTitle('Senior Backend API')
-    .setDescription('NestJS Senior Backend Demo API')
+    .setTitle('Learning Platform API')
+    .setDescription('API documentation for the learning platform')
     .setVersion('1.0')
     .addBearerAuth()
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/docs', app, document);
+  SwaggerModule.setup('api', app, document);
 
-  await app.listen(process.env.PORT ?? 3000);
+  await app.listen(3000);
 }
 bootstrap();

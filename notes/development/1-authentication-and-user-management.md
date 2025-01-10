@@ -1,108 +1,165 @@
-# Authentication and User Management Implementation
+# Authentication and User Management
 
 ## Overview
 
-We have implemented a comprehensive authentication and user management system using NestJS, TypeORM, and Passport.js. The system provides secure user authentication, role-based authorization, and user management functionalities.
+The authentication system is implemented using JWT tokens with a full-stack approach:
 
-## Core Components
+- Backend: NestJS with Passport and JWT
+- Frontend: Vue.js with Pinia for state management
 
-### 1. User Entity (`src/modules/users/entities/user.entity.ts`)
+## Backend Implementation (apps/backend)
 
-- Defines the user model with properties:
-  - Basic info: `id`, `email`, `firstName`, `lastName`
-  - Security: `password` (hashed), `role`
-  - Email verification: `isEmailVerified`, `verificationToken`
-  - Password reset: `passwordResetToken`, `passwordResetExpires`
-  - Timestamps: `createdAt`, `updatedAt`
-- Implements password hashing using bcrypt
-- Uses class-transformer to exclude sensitive fields from responses
+### 1. Authentication Module
 
-### 2. User Module (`src/modules/users/users.module.ts`)
+```typescript
+// apps/backend/src/modules/auth/auth.module.ts
+@Module({
+  imports: [
+    PassportModule,
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      useFactory: async (configService: ConfigService) => ({
+        secret: configService.get("JWT_SECRET"),
+        signOptions: { expiresIn: "1h" },
+      }),
+      inject: [ConfigService],
+    }),
+    UsersModule,
+  ],
+  providers: [AuthService, JwtStrategy],
+  controllers: [AuthController],
+})
+export class AuthModule {}
+```
 
-- Provides user management functionality
-- Exports `UsersService` for use in other modules
-- Uses TypeORM for database operations
+### 2. JWT Strategy
 
-### 3. Authentication Module (`src/modules/auth/auth.module.ts`)
+```typescript
+// apps/backend/src/modules/auth/jwt.strategy.ts
+@Injectable()
+export class JwtStrategy extends PassportStrategy(Strategy) {
+  constructor(
+    private configService: ConfigService,
+    private usersService: UsersService
+  ) {
+    super({
+      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      secretOrKey: configService.get("JWT_SECRET"),
+    });
+  }
 
-- Implements JWT-based authentication
-- Configures Passport.js strategies
-- Manages JWT token generation and validation
+  async validate(payload: any) {
+    return this.usersService.findById(payload.sub);
+  }
+}
+```
 
-### 4. Guards and Decorators
+## Frontend Implementation (apps/frontend)
 
-- `JwtAuthGuard`: Protects routes requiring authentication
-- `RolesGuard`: Implements role-based access control
-- `@Roles()` decorator: Specifies required roles for endpoints
+### 1. Auth Store
 
-### 5. DTOs
+```typescript
+// apps/frontend/src/stores/auth.ts
+export const useAuthStore = defineStore("auth", {
+  state: () => ({
+    user: null,
+    token: null,
+    loading: false,
+  }),
 
-- `CreateUserDto`: Validates user registration data
-- `UpdateUserDto`: Validates user update data
-- `LoginDto`: Validates login credentials
+  actions: {
+    async login(credentials) {
+      this.loading = true;
+      try {
+        const response = await authApi.login(credentials);
+        this.token = response.data.token;
+        this.user = response.data.user;
+        localStorage.setItem("token", this.token);
+      } finally {
+        this.loading = false;
+      }
+    },
 
-## Features Implemented
+    logout() {
+      this.user = null;
+      this.token = null;
+      localStorage.removeItem("token");
+    },
+  },
+});
+```
 
-### Authentication
+### 2. API Integration
 
-- User registration with password hashing
-- Login with JWT token generation
-- JWT-based route protection
-- Role-based access control (Admin/User roles)
+```typescript
+// apps/frontend/src/api/auth.ts
+import apiClient from "./axios";
 
-### User Management
+export const authApi = {
+  login: (credentials) => apiClient.post("/auth/login", credentials),
 
-- CRUD operations for users
-- Pagination for user listing
-- Email verification system
-- Password reset functionality
-  - Request password reset
-  - Reset password with token
-- Profile management
+  register: (userData) => apiClient.post("/auth/register", userData),
+};
+```
 
-### Security Features
+## Authentication Flow
 
-- Password hashing with bcrypt
-- JWT token authentication
-- Role-based authorization
-- Email verification
-- Secure password reset flow
+1. User submits login credentials
+2. Backend validates and returns JWT
+3. Frontend stores token in localStorage
+4. Token is included in subsequent API requests
+5. Backend validates token on protected routes
 
-## API Endpoints
+## Protected Routes
 
-### Authentication
+### Backend
 
-- `POST /auth/login`: User login
-- `GET /auth/profile`: Get current user profile
+```typescript
+// apps/backend/src/modules/content/content.controller.ts
+@Controller("content")
+@UseGuards(JwtAuthGuard)
+export class ContentController {
+  // Protected routes
+}
+```
 
-### User Management
+### Frontend
 
-- `POST /users`: Create new user (Admin only)
-- `GET /users`: List all users (Admin only)
-- `GET /users/:id`: Get user by ID
-- `PATCH /users/:id`: Update user
-- `DELETE /users/:id`: Delete user (Admin only)
-- `POST /users/verify-email/:token`: Verify email
-- `POST /users/request-password-reset`: Request password reset
-- `POST /users/reset-password/:token`: Reset password
+```typescript
+// apps/frontend/src/router/index.ts
+const routes = [
+  {
+    path: "/content",
+    component: () => import("../views/ContentView.vue"),
+    meta: { requiresAuth: true },
+  },
+];
 
-## Dependencies Added
-
-- `@nestjs/passport`: NestJS Passport integration
-- `passport`: Authentication middleware
-- `passport-jwt`: JWT strategy for Passport
-- `passport-local`: Local strategy for Passport
-- `@types/passport-jwt`: TypeScript definitions for passport-jwt
-- `@types/passport-local`: TypeScript definitions for passport-local
-- `bcrypt`: Password hashing
+router.beforeEach((to, from, next) => {
+  const token = localStorage.getItem("token");
+  if (to.meta.requiresAuth && !token) {
+    next("/login");
+  } else {
+    next();
+  }
+});
+```
 
 ## Security Considerations
 
-- Passwords are hashed before storage
-- Sensitive data is excluded from responses
-- JWT tokens are used for stateless authentication
-- Role-based access control is implemented
-- Email verification is required
-- Secure password reset flow with expiring tokens
-- Rate limiting should be added (TODO)
-- Request validation using class-validator
+1. Token Storage
+
+   - Use secure HttpOnly cookies for production
+   - Implement token refresh mechanism
+   - Clear tokens on logout
+
+2. Password Security
+
+   - Hash passwords with bcrypt
+   - Implement password strength validation
+   - Add rate limiting for login attempts
+
+3. CORS Configuration
+   - Configure allowed origins
+   - Handle credentials properly
+   - Set appropriate headers

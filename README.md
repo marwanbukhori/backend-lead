@@ -1,34 +1,44 @@
-# Senior Backend Demo
+# Source Of Truth
 
-A NestJS-based backend application demonstrating senior-level architectural patterns and best practices.
+A comprehensive knowledge platform built with NestJS and Vue.js, designed to be the definitive source of truth for backend and cloud programming concepts. This platform aims to provide structured, maintainable, and accessible documentation for development teams.
 
-## Features
+## Project Status & Milestones
 
-- User authentication and authorization with JWT
-- Role-based access control (RBAC)
-- Hierarchical content management (Categories & Topics)
-- Database seeding through CLI
-- API documentation with Swagger/OpenAPI
-- TypeORM for database management
-- PostgreSQL as the database
+### Completed Features ✅
 
-## Getting Started
+- [x] Project setup and architecture
+- [x] Authentication system
+  - User registration with email/password
+  - JWT-based login system
+  - Protected routes implementation
+- [x] Database integration with PostgreSQL
+- [x] CORS and security configurations
+- [x] Comprehensive documentation structure
 
-### Prerequisites
+### In Progress 🚧
 
-- Node.js (v16 or higher)
-- PostgreSQL
-- npm or yarn
+- [ ] Documentation content management
+  - Content creation endpoints
+  - Content organization system
+  - Version control for documentation
+- [ ] User profile management
+- [ ] Search functionality
+- [ ] Content categorization system
 
-### Installation
+### Future Milestones 🎯
 
-1. Clone the repository:
+- [ ] Interactive code examples
+- [ ] User progress tracking
+- [ ] Community features
+  - Comments and discussions
+  - User contributions
+- [ ] Advanced search with filters
+- [ ] API documentation generator
+- [ ] Integration with cloud services
 
-```bash
-git clone <repository-url>
-cd senior-backend-demo
-```
+## Quick Start
 
+1. Clone the repository
 2. Install dependencies:
 
 ```bash
@@ -38,78 +48,84 @@ npm install
 3. Set up environment variables:
 
 ```bash
+# Copy example env file
 cp .env.example .env
-# Edit .env with your configuration
+
+# Update with your configurations
+# Required variables:
+# - DATABASE_URL
+# - JWT_SECRET
+# - CORS_ORIGIN
 ```
 
-4. Start the application:
+4. Start development servers:
 
 ```bash
-# Development
-npm run start:dev
-
-# Production
-npm run build
-npm run start:prod
-```
-
-## CLI Commands
-
-The application includes several CLI commands to help with common tasks:
-
-### Database Seeding
-
-Populate the database with initial data:
-
-```bash
-npm run seed
-```
-
-This command will:
-
-- Seed categories (main categories and subcategories)
-- Seed topics with proper category relationships
-- Show progress with descriptive messages
-- Handle errors gracefully
-
-## API Documentation
-
-Once the application is running, you can access the Swagger documentation at:
-
-```
-http://localhost:3000/api
-```
-
-## Project Structure
-
-```
-src/
-├── modules/           # Feature modules
-│   ├── auth/         # Authentication module
-│   ├── users/        # User management
-│   ├── categories/   # Content categories
-│   └── topics/       # Learning topics
-├── commands/         # CLI commands
-├── config/          # Configuration
-└── common/          # Shared resources
+npm run dev
 ```
 
 ## Available Scripts
 
-- `npm run start:dev` - Start the application in development mode
-- `npm run build` - Build the application
-- `npm run start:prod` - Start the application in production mode
+- `npm run dev` - Start both frontend and backend in development mode
+- `npm run build` - Build both applications
+- `npm run dev:frontend` - Start frontend only
+- `npm run dev:backend` - Start backend only
 - `npm run test` - Run tests
-- `npm run lint` - Run linting
-- `npm run seed` - Run database seeders
+- `npm run migration:run` - Run database migrations
+
+## Documentation Structure
+
+```
+notes/
+├── dev/               # Development documentation
+│   ├── api/          # API documentation
+│   └── database/     # Database schemas and migrations
+├── frontend/         # Frontend implementation
+├── ops/              # Operations and deployment
+└── concepts/         # Core concepts and architecture
+```
+
+## Core Documentation
+
+- [Authentication Guide](notes/dev/api/auth.md)
+- [API Documentation](notes/dev/api/README.md)
+- [Frontend Guide](notes/frontend/AUTH.md)
+- [Operations Setup](notes/ops/setup/AUTH_SETUP.md)
+- [Architecture Overview](notes/ARCHITECTURE.md)
+
+## Project Structure
+
+```
+source-of-truth/
+├── apps/
+│   ├── backend/       # NestJS application
+│   │   ├── src/
+│   │   ├── test/
+│   │   └── package.json
+│   └── frontend/      # Vue.js application
+│       ├── src/
+│       ├── public/
+│       └── package.json
+├── notes/            # Documentation
+└── package.json      # Root package.json
+```
 
 ## Contributing
 
-1. Create a feature branch
-2. Commit your changes
-3. Push to the branch
-4. Create a Pull Request
+See our [Contributing Guide](notes/contributing/WORKFLOW.md) for details on:
+
+- Development workflow
+- Code style guidelines
+- Pull request process
+- Documentation standards
+
+## Security
+
+For security considerations and setup, see:
+
+- [Authentication Setup](notes/ops/setup/AUTH_SETUP.md)
+- [Security Best Practices](notes/dev/security/README.md)
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

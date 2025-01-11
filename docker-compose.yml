@@ -3,13 +3,14 @@ services:
     build:
       context: ./apps/frontend
       dockerfile: Dockerfile
+      target: development
     ports:
-      - "${FRONTEND_PORT:-5173}:80"
+      - "${FRONTEND_PORT:-3000}:3000"
     volumes:
       - ./apps/frontend:/app
       - /app/node_modules
     environment:
-      - VITE_API_URL=http://localhost:${BACKEND_PORT:-3000}
+      - VITE_API_URL=http://localhost:3001
     depends_on:
       - backend
     networks:
@@ -20,11 +21,12 @@ services:
       context: ./apps/backend
       dockerfile: Dockerfile
     ports:
-      - "${BACKEND_PORT:-3000}:3000"
+      - "${BACKEND_PORT:-3001}:3001"
     volumes:
       - ./apps/backend:/app
       - /app/node_modules
     environment:
+      - PORT=3001
       - NODE_ENV=development
       - DB_HOST=postgres
       - DB_PORT=${POSTGRES_PORT:-5432}

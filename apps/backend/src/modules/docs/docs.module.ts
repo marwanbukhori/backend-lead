@@ -1,26 +1,15 @@
 import { Module } from '@nestjs/common';
-
-import { ElasticsearchModule } from '@nestjs/elasticsearch';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { DocsController } from './docs.controller';
 import { DocsService } from './docs.service';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { Document } from './entities/document.entity';
 
 @Module({
   imports: [
-    ElasticsearchModule.registerAsync({
-      imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => ({
-        node: configService.get('ELASTICSEARCH_NODE'),
-        auth: {
-          username: configService.get('ELASTICSEARCH_USERNAME'),
-          password: configService.get('ELASTICSEARCH_PASSWORD'),
-        },
-      }),
-      inject: [ConfigService],
-    }),
+    TypeOrmModule.forFeature([Document])
   ],
   controllers: [DocsController],
   providers: [DocsService],
-  exports: [DocsService],
+  exports: [DocsService]
 })
 export class DocsModule {}

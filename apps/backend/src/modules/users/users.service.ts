@@ -77,7 +77,7 @@ export class UsersService {
       if (!isPasswordValid) {
         throw new UnauthorizedException('Current password is incorrect');
       }
-      user.password = updateUserDto.newPassword;
+      user.password_hash = updateUserDto.newPassword;
     }
 
     Object.assign(user, updateUserDto);
@@ -131,7 +131,7 @@ export class UsersService {
       throw new NotFoundException('Invalid or expired password reset token');
     }
 
-    user.password = newPassword;
+    user.password_hash = newPassword;
     user.passwordResetToken = null;
     user.passwordResetExpires = null;
     return this.userRepository.save(user);

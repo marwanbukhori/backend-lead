@@ -24,7 +24,7 @@ export class User {
 
   @Exclude()
   @Column()
-  password: string;
+  password_hash: string;
 
   @ApiProperty()
   @Column()
@@ -65,13 +65,13 @@ export class User {
   @BeforeInsert()
   @BeforeUpdate()
   async hashPassword() {
-    if (this.password) {
+    if (this.password_hash) {
       const salt = await bcrypt.genSalt();
-      this.password = await bcrypt.hash(this.password, salt);
+      this.password_hash = await bcrypt.hash(this.password_hash, salt);
     }
   }
 
   async comparePassword(attempt: string): Promise<boolean> {
-    return bcrypt.compare(attempt, this.password);
+    return bcrypt.compare(attempt, this.password_hash);
   }
 }

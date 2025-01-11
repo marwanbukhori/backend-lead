@@ -1,7 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { DataSource } from 'typeorm';
-import { InitialDatabaseSeed } from './database/seeds/initial.seed';
+import { initialSeed } from './database/seeds/initial.seed';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -11,8 +11,8 @@ async function bootstrap() {
 
   switch (command) {
     case 'seed':
-      const seeder = new InitialDatabaseSeed();
-      await seeder.run(dataSource);
+      console.log('Seeding database...');
+      await initialSeed(dataSource);
       console.log('Database seeded successfully!');
       break;
     default:

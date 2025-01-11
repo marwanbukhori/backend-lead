@@ -48,10 +48,13 @@
 
             <!-- Item Details -->
             <div class="flex-1">
-              <router-link :to="item.path" class="block">
+              <div
+                class="block cursor-pointer"
+                @click="$emit('item-click', item.path)"
+              >
                 <h3 class="font-medium text-gray-900">{{ item.title }}</h3>
                 <p class="text-sm text-gray-500">{{ item.description }}</p>
-              </router-link>
+              </div>
 
               <!-- Tags/Metadata -->
               <div class="mt-2 flex flex-wrap gap-2">
@@ -80,17 +83,25 @@
 import { computed } from "vue";
 import { useRoute } from "vue-router";
 
+interface TableOfContentsItem {
+  title: string;
+  description: string;
+  path: string;
+  tags?: string[];
+  readingTime?: string;
+}
+
+interface TableOfContentsSection {
+  title: string;
+  items: TableOfContentsItem[];
+}
+
 const props = defineProps<{
-  sections: Array<{
-    title: string;
-    items: Array<{
-      title: string;
-      description: string;
-      path: string;
-      tags?: string[];
-      readingTime?: string;
-    }>;
-  }>;
+  sections: TableOfContentsSection[];
+}>();
+
+defineEmits<{
+  (e: "item-click", path: string): void;
 }>();
 
 const route = useRoute();
@@ -102,7 +113,7 @@ const isCompleted = (path: string): boolean => {
   return completedPaths.has(path);
 };
 
-const getProgressPercentage = (section: (typeof props.sections)[0]): number => {
+const getProgressPercentage = (section: TableOfContentsSection): number => {
   const total = section.items.length;
   const completed = section.items.filter((item) =>
     isCompleted(item.path)
@@ -117,6 +128,14 @@ const activeSection = computed(() => {
     section.items.some((item) => item.path === currentPath)
   );
 });
+
+const isActiveItem = (item: TableOfContentsItem) => {
+  return route.path === item.path;
+};
+
+const hasActiveItem = (section: TableOfContentsSection) => {
+  return section.items.some((item) => isActiveItem(item));
+};
 </script>
 
 <style scoped>

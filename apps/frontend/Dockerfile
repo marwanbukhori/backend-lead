@@ -12,17 +12,22 @@ RUN npm install
 # Copy source code
 COPY . .
 
-# Build application
+# Development stage (for hot reloading)
+FROM builder as development
+CMD ["npm", "run", "dev", "--", "--host"]
+
+# Build for production
+FROM builder as production-build
 RUN npm run build
 
 # Production stage
-FROM nginx:alpine
+FROM nginx:alpine as production
 
 # Copy nginx configuration
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # Copy built application
-COPY --from=builder /app/dist /usr/share/nginx/html
+COPY --from=production-build /app/dist /usr/share/nginx/html
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s \

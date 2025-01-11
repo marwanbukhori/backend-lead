@@ -1,20 +1,21 @@
 import { DataSource, DataSourceOptions } from 'typeorm';
-import { User } from '../entities/user.entity';
-import { Document } from '../entities/document.entity';
-import { Bookmark } from '../entities/bookmark.entity';
-import { ReadingProgress } from '../entities/reading-progress.entity';
-import { InitialSchema1704771600000 } from './migrations/1704771600000-InitialSchema';
+import { config } from 'dotenv';
+import { join } from 'path';
+
+config();
 
 export const dataSourceOptions: DataSourceOptions = {
   type: 'postgres',
   host: process.env.DB_HOST || 'localhost',
-  port: parseInt(process.env.DB_PORT || '5432', 10),
+  port: parseInt(process.env.DB_PORT) || 5432,
   username: process.env.DB_USERNAME || 'postgres',
   password: process.env.DB_PASSWORD || 'postgres',
-  database: process.env.DB_NAME || 'docs_repository',
-  entities: [User, Document, Bookmark, ReadingProgress],
-  migrations: [InitialSchema1704771600000],
+  database: process.env.DB_NAME || 'source_of_truth',
+  entities: [join(__dirname, '..', '**', '*.entity.{ts,js}')],
+  migrations: [join(__dirname, '..', 'migrations', '*.{ts,js}')],
   synchronize: false,
+  logging: true,
+  logger: 'advanced-console'
 };
 
 const dataSource = new DataSource(dataSourceOptions);

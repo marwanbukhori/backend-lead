@@ -36,16 +36,61 @@ A comprehensive knowledge platform built with NestJS and Vue.js, designed to be 
 - [ ] API documentation generator
 - [ ] Integration with cloud services
 
-## Quick Start
+## Quick Start with Docker
 
-1. Clone the repository
-2. Install dependencies:
+1. Clone the repository:
+
+```bash
+git clone https://github.com/yourusername/source-of-truth.git
+cd source-of-truth
+```
+
+2. Copy environment files:
+
+```bash
+cp .env.example .env
+```
+
+3. Start with Docker Compose:
+
+```bash
+# Development
+docker-compose up -d
+
+# Production
+docker-compose -f docker-compose.prod.yml up -d
+```
+
+4. Set up the database:
+
+```bash
+# Run migrations
+docker-compose exec backend npm run migration:run
+
+# Seed initial data
+docker-compose exec backend npm run seed
+```
+
+5. Access the application:
+
+- Frontend: http://localhost:5173
+- Backend API: http://localhost:3000
+- API Documentation: http://localhost:3000/api
+
+Default credentials:
+
+- Email: admin@example.com
+- Password: admin123
+
+## Manual Setup (Without Docker)
+
+1. Install dependencies:
 
 ```bash
 npm install
 ```
 
-3. Set up environment variables:
+2. Set up environment variables:
 
 ```bash
 # Copy example env file
@@ -58,7 +103,7 @@ cp .env.example .env
 # - CORS_ORIGIN
 ```
 
-4. Start development servers:
+3. Start development servers:
 
 ```bash
 npm run dev

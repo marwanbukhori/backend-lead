@@ -1,13 +1,11 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { CqrsModule } from '@nestjs/cqrs';
-import { CacheModule } from '@nestjs/cache-manager';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { ContentController } from './content.controller';
 import { Content } from './entities/content.entity';
+import { ContentService } from './content.service';
+import { ContentController } from './content.controller';
 import { TopicsModule } from '../topics/topics.module';
 import { ContentSeeder } from './content.seed';
-import cacheConfig from '../../config/cache.config';
 
 // Command Handlers
 import { CreateContentHandler } from './commands/handlers/create-content.handler';
@@ -29,21 +27,15 @@ const EventHandlers = [ContentPublishedHandler];
     TypeOrmModule.forFeature([Content]),
     TopicsModule,
     CqrsModule,
-    CacheModule.registerAsync({
-      imports: [ConfigModule.forFeature(cacheConfig)],
-      useFactory: async (configService: ConfigService) => ({
-        ...configService.get('cache'),
-      }),
-      inject: [ConfigService],
-    }),
   ],
-  controllers: [ContentController],
   providers: [
+    ContentService,
     ContentSeeder,
     ...CommandHandlers,
     ...QueryHandlers,
     ...EventHandlers,
   ],
-  exports: [ContentSeeder],
+  controllers: [ContentController],
+  exports: [ContentService, ContentSeeder]
 })
 export class ContentModule {}

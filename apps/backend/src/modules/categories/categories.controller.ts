@@ -24,7 +24,7 @@ import { UserRole } from '../../common/constants';
 import { Category } from './entities/category.entity';
 
 @ApiTags('categories')
-@Controller('categories')
+@Controller('api/categories')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @ApiBearerAuth()
 export class CategoriesController {

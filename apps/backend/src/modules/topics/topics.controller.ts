@@ -25,7 +25,7 @@ import { UserRole } from '../../common/constants';
 import { Topic } from './entities/topic.entity';
 
 @ApiTags('topics')
-@Controller('topics')
+@Controller('api/topics')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @ApiBearerAuth()
 export class TopicsController {

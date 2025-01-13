@@ -16,38 +16,88 @@ CREATE TABLE users (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Documents table
+-- Categories table (for organizing documents)
+CREATE TABLE categories (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name VARCHAR(255) NOT NULL,
+    slug VARCHAR(255) UNIQUE NOT NULL,
+    description TEXT,
+    parent_id UUID REFERENCES categories(id),
+    order_index INTEGER DEFAULT 0,
+    icon VARCHAR(50),
+    is_visible BOOLEAN DEFAULT true,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Documents table (enhanced)
 CREATE TABLE documents (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     title VARCHAR(255) NOT NULL,
     content TEXT NOT NULL,
     path VARCHAR(255) UNIQUE NOT NULL,
+    category_id UUID REFERENCES categories(id) ON DELETE SET NULL,
     metadata JSONB DEFAULT '{}',
     tags TEXT[] DEFAULT '{}',
+    search_vector tsvector GENERATED ALWAYS AS (
+        setweight(to_tsvector('english', title), 'A') ||
+        setweight(to_tsvector('english', COALESCE(content, '')), 'B')
+    ) STORED,
+    order_index INTEGER DEFAULT 0,
+    status VARCHAR(50) DEFAULT 'published',
     views INTEGER DEFAULT 0,
+    estimated_read_time INTEGER,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Bookmarks table
+-- Bookmarks table (enhanced)
 CREATE TABLE bookmarks (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     document_id UUID REFERENCES documents(id) ON DELETE CASCADE,
+    category_id UUID REFERENCES categories(id) ON DELETE CASCADE,
+    notes TEXT,
+    order_index INTEGER DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(user_id, document_id)
 );
 
--- Reading Progress table
+-- Reading Progress table (enhanced)
 CREATE TABLE reading_progress (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     document_id UUID REFERENCES documents(id) ON DELETE CASCADE,
     progress INTEGER DEFAULT 0,
+    last_position TEXT, -- Store section/heading position
     last_read_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    is_completed BOOLEAN DEFAULT false,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(user_id, document_id)
+);
+
+-- Document Sections table (for better TOC structure)
+CREATE TABLE document_sections (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    document_id UUID REFERENCES documents(id) ON DELETE CASCADE,
+    title VARCHAR(255) NOT NULL,
+    content TEXT,
+    order_index INTEGER NOT NULL,
+    parent_section_id UUID REFERENCES document_sections(id),
+    level INTEGER DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Search History table (for command+K optimization)
+CREATE TABLE search_history (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    query TEXT NOT NULL,
+    results_count INTEGER,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Demo Tables
@@ -114,6 +164,18 @@ CREATE INDEX idx_chat_messages_room_id ON chat_messages(room_id);
 CREATE INDEX idx_chat_messages_created_at ON chat_messages(created_at);
 CREATE INDEX idx_reading_progress_user ON reading_progress(user_id);
 
+-- Indexes for optimized queries
+CREATE INDEX idx_documents_search_vector ON documents USING gin(search_vector);
+CREATE INDEX idx_documents_category ON documents(category_id);
+CREATE INDEX idx_documents_status ON documents(status);
+CREATE INDEX idx_documents_order ON documents(category_id, order_index);
+CREATE INDEX idx_bookmarks_user ON bookmarks(user_id, order_index);
+CREATE INDEX idx_reading_progress_user_completed ON reading_progress(user_id, is_completed);
+CREATE INDEX idx_document_sections_document ON document_sections(document_id, order_index);
+CREATE INDEX idx_categories_parent ON categories(parent_id);
+CREATE INDEX idx_categories_order ON categories(parent_id, order_index);
+CREATE INDEX idx_search_history_user_time ON search_history(user_id, created_at DESC);
+
 -- Trigger for updated_at
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
@@ -146,5 +208,21 @@ CREATE TRIGGER update_chat_rooms_updated_at
 
 CREATE TRIGGER update_reading_progress_updated_at
     BEFORE UPDATE ON reading_progress
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
+-- Update triggers
+CREATE TRIGGER update_categories_updated_at
+    BEFORE UPDATE ON categories
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_document_sections_updated_at
+    BEFORE UPDATE ON document_sections
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_bookmarks_updated_at
+    BEFORE UPDATE ON bookmarks
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();

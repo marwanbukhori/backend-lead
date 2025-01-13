@@ -91,7 +91,7 @@ onMounted(async () => {
 }
 
 .markdown-content a {
-  @apply text-blue-600 hover:text-blue-800 underline;
+  @apply text-gray-900 hover:text-black underline;
 }
 
 .markdown-content blockquote {

@@ -28,7 +28,7 @@ import { ApiPaginatedResponse } from '../../common/decorators/api-paginated-resp
 import { User } from './entities/user.entity';
 
 @ApiTags('users')
-@Controller('users')
+@Controller('api/users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 

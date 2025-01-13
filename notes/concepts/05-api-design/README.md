@@ -10,24 +10,24 @@ API design is crucial for creating maintainable, scalable, and user-friendly web
 
 ```typescript
 // users/users.controller.ts
-@Controller('users')
+@Controller("users")
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get()
-  @ApiOperation({ summary: 'Get all users' })
-  @ApiResponse({ status: 200, description: 'Return all users.' })
+  @ApiOperation({ summary: "Get all users" })
+  @ApiResponse({ status: 200, description: "Return all users." })
   async findAll(
-    @Query() query: ListUsersDto,
+    @Query() query: ListUsersDto
   ): Promise<PaginatedResponse<User>> {
     return this.usersService.findAll(query);
   }
 
-  @Get(':id')
-  @ApiOperation({ summary: 'Get a user by id' })
-  @ApiResponse({ status: 200, description: 'Return a user.' })
-  @ApiResponse({ status: 404, description: 'User not found.' })
-  async findOne(@Param('id', ParseIntPipe) id: number): Promise<User> {
+  @Get(":id")
+  @ApiOperation({ summary: "Get a user by id" })
+  @ApiResponse({ status: 200, description: "Return a user." })
+  @ApiResponse({ status: 404, description: "User not found." })
+  async findOne(@Param("id", ParseIntPipe) id: number): Promise<User> {
     const user = await this.usersService.findOne(id);
     if (!user) {
       throw new NotFoundException(`User #${id} not found`);
@@ -36,30 +36,30 @@ export class UsersController {
   }
 
   @Post()
-  @ApiOperation({ summary: 'Create a new user' })
-  @ApiResponse({ status: 201, description: 'User created successfully.' })
-  @ApiResponse({ status: 400, description: 'Invalid input.' })
+  @ApiOperation({ summary: "Create a new user" })
+  @ApiResponse({ status: 201, description: "User created successfully." })
+  @ApiResponse({ status: 400, description: "Invalid input." })
   async create(@Body() createUserDto: CreateUserDto): Promise<User> {
     return this.usersService.create(createUserDto);
   }
 
-  @Put(':id')
-  @ApiOperation({ summary: 'Update a user' })
-  @ApiResponse({ status: 200, description: 'User updated successfully.' })
-  @ApiResponse({ status: 404, description: 'User not found.' })
+  @Put(":id")
+  @ApiOperation({ summary: "Update a user" })
+  @ApiResponse({ status: 200, description: "User updated successfully." })
+  @ApiResponse({ status: 404, description: "User not found." })
   async update(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() updateUserDto: UpdateUserDto,
+    @Param("id", ParseIntPipe) id: number,
+    @Body() updateUserDto: UpdateUserDto
   ): Promise<User> {
     return this.usersService.update(id, updateUserDto);
   }
 
-  @Delete(':id')
-  @ApiOperation({ summary: 'Delete a user' })
-  @ApiResponse({ status: 204, description: 'User deleted successfully.' })
-  @ApiResponse({ status: 404, description: 'User not found.' })
+  @Delete(":id")
+  @ApiOperation({ summary: "Delete a user" })
+  @ApiResponse({ status: 204, description: "User deleted successfully." })
+  @ApiResponse({ status: 404, description: "User not found." })
   @HttpCode(204)
-  async remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
+  async remove(@Param("id", ParseIntPipe) id: number): Promise<void> {
     await this.usersService.remove(id);
   }
 }
@@ -75,18 +75,18 @@ export class UsersResolver {
 
   @Query(() => [User])
   async users(
-    @Args('filter', { nullable: true }) filter: UserFilterInput,
+    @Args("filter", { nullable: true }) filter: UserFilterInput
   ): Promise<User[]> {
     return this.usersService.findAll(filter);
   }
 
   @Query(() => User)
-  async user(@Args('id', { type: () => Int }) id: number): Promise<User> {
+  async user(@Args("id", { type: () => Int }) id: number): Promise<User> {
     return this.usersService.findOne(id);
   }
 
   @Mutation(() => User)
-  async createUser(@Args('input') input: CreateUserInput): Promise<User> {
+  async createUser(@Args("input") input: CreateUserInput): Promise<User> {
     return this.usersService.create(input);
   }
 
@@ -119,19 +119,19 @@ export class CreateUserInput {
 const app = await NestFactory.create(AppModule);
 app.enableVersioning({
   type: VersioningType.URI,
-  defaultVersion: '1',
+  defaultVersion: "1",
 });
 
 // users/users.controller.ts
 @Controller({
-  version: '1',
-  path: 'users',
+  version: "1",
+  path: "users",
 })
 export class UsersV1Controller {}
 
 @Controller({
-  version: '2',
-  path: 'users',
+  version: "2",
+  path: "users",
 })
 export class UsersV2Controller {}
 ```
@@ -151,7 +151,7 @@ export class UsersV2Controller {}
 export class AppModule {}
 
 // users/users.controller.ts
-@Controller('users')
+@Controller("users")
 @UseGuards(ThrottlerGuard)
 export class UsersController {
   @Throttle(5, 60)
@@ -171,19 +171,19 @@ export class UsersController {
 export class CreateUserDto {
   @IsEmail()
   @ApiProperty({
-    example: 'user@example.com',
-    description: 'The email of the user',
+    example: "user@example.com",
+    description: "The email of the user",
   })
   email: string;
 
   @IsString()
   @MinLength(8)
   @Matches(/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/, {
-    message: 'Password too weak',
+    message: "Password too weak",
   })
   @ApiProperty({
-    example: 'Password123',
-    description: 'The password of the user',
+    example: "Password123",
+    description: "The password of the user",
   })
   password: string;
 
@@ -191,8 +191,8 @@ export class CreateUserDto {
   @IsArray()
   @IsString({ each: true })
   @ApiProperty({
-    example: ['user', 'admin'],
-    description: 'The roles of the user',
+    example: ["user", "admin"],
+    description: "The roles of the user",
     required: false,
   })
   roles?: string[];
@@ -223,7 +223,7 @@ export class User {
 }
 
 // users/users.controller.ts
-@Controller('users')
+@Controller("users")
 @UseInterceptors(ClassSerializerInterceptor)
 export class UsersController {
   @Get()
@@ -261,7 +261,7 @@ export class UsersService {
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     @Inject(CACHE_MANAGER)
-    private cacheManager: Cache,
+    private cacheManager: Cache
   ) {}
 
   async findAll(query: ListUsersDto): Promise<PaginatedResponse<User>> {
@@ -313,7 +313,7 @@ export class UsersService {
       where: { email: createUserDto.email },
     });
     if (existingUser) {
-      throw new ConflictException('Email already exists');
+      throw new ConflictException("Email already exists");
     }
 
     const user = this.userRepository.create(createUserDto);
@@ -328,7 +328,7 @@ export class TransformInterceptor<T>
 {
   intercept(
     context: ExecutionContext,
-    next: CallHandler,
+    next: CallHandler
   ): Observable<Response<T>> {
     return next.handle().pipe(
       map((data) => ({
@@ -337,7 +337,7 @@ export class TransformInterceptor<T>
           timestamp: new Date().toISOString(),
           path: context.switchToHttp().getRequest().url,
         },
-      })),
+      }))
     );
   }
 }
@@ -346,7 +346,7 @@ export class TransformInterceptor<T>
 ## Testing
 
 ```typescript
-describe('UsersController', () => {
+describe("UsersController", () => {
   let controller: UsersController;
   let service: UsersService;
 
@@ -371,20 +371,20 @@ describe('UsersController', () => {
     service = module.get<UsersService>(UsersService);
   });
 
-  describe('findAll', () => {
-    it('should return an array of users', async () => {
-      const result = [{ id: 1, name: 'Test User' }];
-      jest.spyOn(service, 'findAll').mockResolvedValue(result);
+  describe("findAll", () => {
+    it("should return an array of users", async () => {
+      const result = [{ id: 1, name: "Test User" }];
+      jest.spyOn(service, "findAll").mockResolvedValue(result);
 
       expect(await controller.findAll({})).toBe(result);
     });
   });
 
-  describe('create', () => {
-    it('should create a new user', async () => {
-      const createUserDto = { email: 'test@example.com', password: 'password' };
+  describe("create", () => {
+    it("should create a new user", async () => {
+      const createUserDto = { email: "test@example.com", password: "password" };
       const result = { id: 1, ...createUserDto };
-      jest.spyOn(service, 'create').mockResolvedValue(result);
+      jest.spyOn(service, "create").mockResolvedValue(result);
 
       expect(await controller.create(createUserDto)).toBe(result);
     });

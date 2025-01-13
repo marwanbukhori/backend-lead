@@ -3,11 +3,13 @@ import {
   Get,
   Post,
   Put,
+  Delete,
   Body,
   Param,
   UseGuards,
   NotFoundException,
   InternalServerErrorException,
+  Request,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -20,7 +22,8 @@ export class DocsController {
 
   @Get()
   @ApiOperation({ summary: 'Get all documents' })
-  async getAllDocs() {
+  @UseGuards(JwtAuthGuard)
+  async getAllDocs(@Request() req) {
     return this.docsService.getAllDocs();
   }
 
@@ -28,6 +31,44 @@ export class DocsController {
   @ApiOperation({ summary: 'Get document categories' })
   async getCategories() {
     return this.docsService.getCategories();
+  }
+
+  @Get('bookmarks')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Get user bookmarks' })
+  async getBookmarks(@Request() req) {
+    return this.docsService.getBookmarks(req.user.id);
+  }
+
+  @Post('bookmarks/:documentId')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Add a bookmark' })
+  async addBookmark(
+    @Request() req,
+    @Param('documentId') documentId: string,
+    @Body('notes') notes?: string,
+  ) {
+    return this.docsService.addBookmark(req.user.id, documentId, notes);
+  }
+
+  @Delete('bookmarks/:documentId')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Remove a bookmark' })
+  async removeBookmark(
+    @Request() req,
+    @Param('documentId') documentId: string,
+  ) {
+    return this.docsService.removeBookmark(req.user.id, documentId);
+  }
+
+  @Put('bookmarks/order')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Update bookmark order' })
+  async updateBookmarkOrder(
+    @Request() req,
+    @Body('bookmarkIds') bookmarkIds: string[],
+  ) {
+    return this.docsService.updateBookmarkOrder(req.user.id, bookmarkIds);
   }
 
   @Get(':path(*)')

@@ -3,6 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { CategoriesSeeder } from '../modules/categories/categories.seed';
 import { TopicsSeeder } from '../modules/topics/topics.seed';
 import { ContentSeeder } from '../modules/content/content.seed';
+import { DocsSeeder } from '../modules/docs/docs.seed';
 
 @Injectable()
 @Command({
@@ -14,6 +15,7 @@ export class SeedCommand extends CommandRunner {
     private readonly categoriesSeeder: CategoriesSeeder,
     private readonly topicsSeeder: TopicsSeeder,
     private readonly contentSeeder: ContentSeeder,
+    private readonly docsSeeder: DocsSeeder,
   ) {
     super();
   }
@@ -33,6 +35,10 @@ export class SeedCommand extends CommandRunner {
       console.log('📄 Seeding content...');
       await this.contentSeeder.seed();
       console.log('✅ Content seeded successfully');
+
+      console.log('📖 Seeding docs...');
+      await this.docsSeeder.seed();
+      console.log('✅ Docs seeded successfully');
 
       console.log('✨ Database seeding completed successfully');
     } catch (error) {

@@ -5,7 +5,7 @@
       <div class="flex items-center justify-between mb-2">
         <router-link
           :to="result.path"
-          class="text-lg font-medium text-blue-600 hover:text-blue-800"
+          class="text-lg font-medium text-gray-900 hover:text-black"
         >
           <span
             v-if="result.highlights?.title"

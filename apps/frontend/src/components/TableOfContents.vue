@@ -3,14 +3,17 @@
     <!-- Section Groups -->
     <div v-for="section in sections" :key="section.title" class="mb-8">
       <div class="section-header">
-        <h2 class="text-lg font-semibold text-gray-900 mb-4">
+        <h2
+          class="text-lg font-semibold text-gray-900 mb-4 cursor-pointer hover:text-gray-700"
+          @click="$emit('category-click', section.title)"
+        >
           {{ section.title }}
         </h2>
 
         <!-- Progress Indicator -->
         <div class="progress-bar">
           <div
-            class="progress-fill bg-blue-600"
+            class="progress-fill bg-gray-600"
             :style="{ width: `${getProgressPercentage(section)}%` }"
           />
         </div>
@@ -61,16 +64,40 @@
                 <span
                   v-for="tag in item.tags"
                   :key="tag"
-                  class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                  class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-800 text-white"
                 >
                   {{ tag }}
                 </span>
               </div>
             </div>
 
-            <!-- Reading Time -->
-            <div class="ml-4 text-sm text-gray-500">
-              {{ item.readingTime || "5 min read" }}
+            <!-- Actions -->
+            <div class="ml-4 flex items-center space-x-2">
+              <!-- Bookmark Button -->
+              <button
+                class="p-1 rounded-full hover:bg-gray-100"
+                @click="$emit('toggle-bookmark', item)"
+              >
+                <svg
+                  class="w-5 h-5"
+                  :class="
+                    item.isBookmarked
+                      ? 'text-yellow-500 fill-current'
+                      : 'text-gray-400'
+                  "
+                  viewBox="0 0 20 20"
+                  fill="none"
+                  stroke="currentColor"
+                >
+                  <path
+                    d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-2.5L5 18V4z"
+                    :fill="item.isBookmarked ? 'currentColor' : 'none'"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                  />
+                </svg>
+              </button>
             </div>
           </div>
         </div>
@@ -82,19 +109,10 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { useRoute } from "vue-router";
-
-interface TableOfContentsItem {
-  title: string;
-  description: string;
-  path: string;
-  tags?: string[];
-  readingTime?: string;
-}
-
-interface TableOfContentsSection {
-  title: string;
-  items: TableOfContentsItem[];
-}
+import type {
+  TableOfContentsItem,
+  TableOfContentsSection,
+} from "@/services/docs.service";
 
 const props = defineProps<{
   sections: TableOfContentsSection[];
@@ -102,6 +120,8 @@ const props = defineProps<{
 
 defineEmits<{
   (e: "item-click", path: string): void;
+  (e: "category-click", category: string): void;
+  (e: "toggle-bookmark", item: TableOfContentsItem): void;
 }>();
 
 const route = useRoute();

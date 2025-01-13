@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import axios from 'axios'
+import { apiClient } from '@/api/client'
 
 interface User {
   id: string
@@ -26,7 +26,7 @@ export const useAuthStore = defineStore('auth', {
 
   actions: {
     async login(email: string, password: string) {
-      const response = await axios.post(`${import.meta.env.VITE_API_URL}/auth/login`, {
+      const response = await apiClient.post('/auth/login', {
         email,
         password,
       })
@@ -36,11 +36,11 @@ export const useAuthStore = defineStore('auth', {
       localStorage.setItem('token', this.token as string)
 
       // Set default Authorization header
-      axios.defaults.headers.common['Authorization'] = `Bearer ${this.token}`
+      apiClient.defaults.headers.common['Authorization'] = `Bearer ${this.token}`
     },
 
     async register(email: string, password: string, name: string) {
-      const response = await axios.post(`${import.meta.env.VITE_API_URL}/auth/register`, {
+      const response = await apiClient.post('/auth/register', {
         email,
         password,
         name,
@@ -51,21 +51,21 @@ export const useAuthStore = defineStore('auth', {
       localStorage.setItem('token', this.token as string)
 
       // Set default Authorization header
-      axios.defaults.headers.common['Authorization'] = `Bearer ${this.token}`
+      apiClient.defaults.headers.common['Authorization'] = `Bearer ${this.token}`
     },
 
     async logout() {
       this.token = null
       this.user = null
       localStorage.removeItem('token')
-      delete axios.defaults.headers.common['Authorization']
+      delete apiClient.defaults.headers.common['Authorization']
     },
 
     async fetchProfile() {
       if (!this.token) return
 
       try {
-        const response = await axios.get(`${import.meta.env.VITE_API_URL}/auth/profile`)
+        const response = await apiClient.get('/auth/profile')
         this.user = response.data
       } catch (error) {
         this.logout()
@@ -77,7 +77,7 @@ export const useAuthStore = defineStore('auth', {
       const token = localStorage.getItem('token')
       if (token) {
         this.token = token
-        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
+        apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`
         this.fetchProfile()
       }
     },

@@ -16,28 +16,26 @@ documentation-repo/
 │   │   ├── src/
 │   │   │   ├── modules/
 │   │   │   │   ├── docs/      # Documentation handling
-│   │   │   │   ├── auth/      # Authentication demo
-│   │   │   │   ├── chat/      # WebSocket demo
-│   │   │   │   ├── tasks/     # CQRS demo
-│   │   │   │   └── cache/     # Redis caching demo
+│   │   │   │   ├── auth/      # Authentication
+│   │   │   │   ├── topics/    # Topic management
+│   │   │   │   ├── content/   # Content management
+│   │   │   │   └── categories/# Category organization
 │   │   │   └── config/        # Configuration
 │   │   └── package.json
 │   │
 │   └── frontend/              # Vue.js Frontend Application
 │       ├── src/
 │       │   ├── components/    # Vue components
-│       │   ├── stores/        # State management
+│       │   ├── stores/        # Pinia state management
+│       │   ├── services/      # API services
 │       │   └── views/         # Page components
 │       └── package.json
 │
 └── notes/                     # Documentation Content
     ├── concepts/             # Core technical concepts
-    │   ├── cqrs/            # CQRS documentation + demo explanation
-    │   ├── caching/         # Caching strategies + demo explanation
-    │   ├── websockets/      # WebSocket implementation + demo
-    │   └── auth/            # Authentication patterns + demo
-    ├── guides/             # Development guides
-    └── best-practices/     # Best practices documentation
+    ├── development/         # Development guides
+    ├── best-practices/      # Best practices
+    └── features/           # Feature documentation
 
 ```
 
@@ -49,126 +47,160 @@ documentation-repo/
 
 ```sql
 CREATE TABLE users (
-  id UUID PRIMARY KEY,
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   email VARCHAR(255) UNIQUE NOT NULL,
   password_hash VARCHAR(255) NOT NULL,
+  firstName VARCHAR(255),
+  lastName VARCHAR(255),
+  role VARCHAR(50) NOT NULL,
+  isEmailVerified BOOLEAN DEFAULT false,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 ```
 
-2. **documents**
+2. **categories**
+
+```sql
+CREATE TABLE categories (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name VARCHAR(255) NOT NULL,
+  slug VARCHAR(255) UNIQUE NOT NULL,
+  description TEXT,
+  parent_id UUID REFERENCES categories(id),
+  order_index INTEGER NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+3. **documents**
 
 ```sql
 CREATE TABLE documents (
-  id UUID PRIMARY KEY,
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   title VARCHAR(255) NOT NULL,
   content TEXT NOT NULL,
   path VARCHAR(255) UNIQUE NOT NULL,
-  metadata JSONB,
+  category_id UUID REFERENCES categories(id),
+  metadata JSONB DEFAULT '{}',
+  tags TEXT[],
+  views INTEGER DEFAULT 0,
+  search_vector tsvector,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 ```
 
-3. **bookmarks**
+4. **document_sections**
+
+```sql
+CREATE TABLE document_sections (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  document_id UUID REFERENCES documents(id),
+  title VARCHAR(255) NOT NULL,
+  content TEXT NOT NULL,
+  level INTEGER NOT NULL,
+  order_index INTEGER NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+5. **bookmarks**
 
 ```sql
 CREATE TABLE bookmarks (
-  id UUID PRIMARY KEY,
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID REFERENCES users(id),
   document_id UUID REFERENCES documents(id),
+  notes TEXT,
+  order_index INTEGER DEFAULT 0,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   UNIQUE(user_id, document_id)
 );
 ```
-
-### Demo Tables
-
-1. **tasks** (CQRS Demo)
-
-```sql
-CREATE TABLE tasks (
-  id UUID PRIMARY KEY,
-  title VARCHAR(255) NOT NULL,
-  description TEXT,
-  status VARCHAR(50) NOT NULL,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE task_events (
-  id UUID PRIMARY KEY,
-  task_id UUID REFERENCES tasks(id),
-  event_type VARCHAR(50) NOT NULL,
-  payload JSONB NOT NULL,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-```
-
-2. **chat_messages** (WebSocket Demo)
-
-```sql
-CREATE TABLE chat_messages (
-  id UUID PRIMARY KEY,
-  user_id UUID REFERENCES users(id),
-  content TEXT NOT NULL,
-  room_id VARCHAR(255) NOT NULL,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-```
-
-## Backend Concepts Implementation
-
-### 1. CQRS Pattern (Task Management Demo)
-
-- Command Bus: Task creation/updates
-- Query Bus: Task retrieval
-- Event Store: Task event logging
-- Event Sourcing: Task state reconstruction
-
-### 2. Caching Strategy (Redis)
-
-- Document caching
-- Search results caching
-- User session management
-- Rate limiting implementation
-
-### 3. WebSocket Implementation (Chat Demo)
-
-- Real-time messaging
-- Room management
-- Presence tracking
-- Message history
-
-### 4. Authentication
-
-- JWT implementation
-- Role-based access
-- Session management
-- Security best practices
 
 ## Core Features
 
 1. **Documentation Management**
 
-   - Markdown content storage
-   - Version control
-   - Search functionality
-   - Navigation system
+   - Markdown content storage and rendering
+   - Document categorization
+   - Section-based content organization
+   - Full-text search with PostgreSQL tsvector
+   - Document versioning and metadata
 
-2. **Working Demos**
+2. **User Features**
 
-   - CQRS task management
-   - Real-time chat
-   - Caching examples
-   - Authentication flows
+   - Authentication with JWT
+   - User roles and permissions
+   - Document bookmarking
+   - Reading progress tracking
+   - Personal notes on documents
 
-3. **User Features**
-   - Authentication
-   - Bookmarks
-   - Reading progress
-   - Demo interaction
+3. **Content Organization**
+
+   - Hierarchical categories
+   - Document tagging
+   - Custom ordering
+   - Related content linking
+
+4. **Search & Discovery**
+
+   - Full-text search
+   - Category-based browsing
+   - Tag-based filtering
+   - Command palette for quick navigation
+
+## Frontend Architecture
+
+1. **State Management**
+
+   - Pinia stores for global state
+   - Vue composition API for component state
+   - Reactive data management
+   - Persistent storage for user preferences
+
+2. **UI Components**
+
+   - Markdown viewer with syntax highlighting
+   - Table of contents navigation
+   - Command palette for quick search
+   - Responsive layout with Tailwind CSS
+   - Black and white theme with accent colors
+
+3. **Routing & Navigation**
+
+   - Vue Router integration
+   - Dynamic route generation
+   - Protected routes
+   - Navigation guards
+
+## Backend Architecture
+
+1. **Module Organization**
+
+   - Feature-based module structure
+   - Clean architecture principles
+   - Dependency injection
+   - TypeORM for database access
+
+2. **API Design**
+
+   - RESTful endpoints
+   - JWT authentication
+   - Request validation
+   - Error handling
+
+3. **Database**
+
+   - PostgreSQL with TypeORM
+   - Full-text search
+   - GiST indexes for search optimization
+   - Database migrations
+   - Seeding system
 
 ## Development Workflow
 
@@ -179,8 +211,9 @@ CREATE TABLE chat_messages (
    - Automated deployment
    - Search indexing
 
-2. **Demo Development**
-   - Isolated modules
-   - Clear documentation
-   - Integration tests
-   - Performance monitoring
+2. **Development**
+
+   - TypeScript throughout
+   - ESLint + Prettier
+   - Husky pre-commit hooks
+   - Automated testing

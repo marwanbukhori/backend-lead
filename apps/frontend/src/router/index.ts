@@ -4,6 +4,7 @@ import HomeView from '@/views/HomeView.vue';
 import LoginView from '@/views/LoginView.vue';
 import RegisterView from '@/views/RegisterView.vue';
 import DocView from '@/views/DocView.vue';
+import CategoryView from '@/views/CategoryView.vue';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -28,6 +29,12 @@ const router = createRouter({
       path: '/docs/:path(.*)*',
       name: 'doc',
       component: DocView,
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/categories/:category',
+      name: 'category',
+      component: CategoryView,
       meta: { requiresAuth: true }
     }
   ]

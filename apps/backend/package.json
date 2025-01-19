@@ -24,7 +24,8 @@
     "typeorm": "typeorm-ts-node-commonjs",
     "migration:generate": "npm run typeorm -- migration:generate",
     "migration:run": "npm run typeorm -- migration:run -d src/database/config.ts",
-    "migration:revert": "npm run typeorm -- migration:revert -d src/database/config.ts"
+    "migration:revert": "npm run typeorm -- migration:revert -d src/database/config.ts",
+    "import:docs": "ts-node scripts/import-docs.ts"
   },
   "dependencies": {
     "@nestjs/bull": "^10.2.3",

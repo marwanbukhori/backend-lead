@@ -32,6 +32,7 @@ export interface TableOfContentsItem {
 
 export interface TableOfContentsSection {
   title: string;
+  id: string;
   items: TableOfContentsItem[];
 }
 
@@ -102,6 +103,7 @@ export const docsService = {
     // Format into sections
     return Object.entries(docsByCategory).map(([category, docs]) => ({
       title: category,
+      id: category,
       items: docs.map(doc => ({
         id: doc.id,
         title: doc.title,

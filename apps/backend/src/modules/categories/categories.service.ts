@@ -16,6 +16,10 @@ export class CategoriesService {
     private readonly categoryRepository: Repository<Category>,
   ) {}
 
+  async findBySlug(slug: string): Promise<Category | null> {
+    return this.categoryRepository.findOne({ where: { slug } });
+  }
+
   async create(createCategoryDto: CreateCategoryDto): Promise<Category> {
     const existingCategory = await this.categoryRepository.findOne({
       where: { slug: createCategoryDto.slug },

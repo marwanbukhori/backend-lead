@@ -7,6 +7,7 @@ import { DocumentSection } from './entities/document-section.entity';
 import { Bookmark } from './entities/bookmark.entity';
 
 interface TableOfContentsItem {
+  id: string;
   title: string;
   description: string;
   path: string;
@@ -17,6 +18,7 @@ interface TableOfContentsItem {
 
 interface TableOfContentsSection {
   title: string;
+  id: string;
   items: TableOfContentsItem[];
 }
 
@@ -98,17 +100,21 @@ export class DocsService {
     }, {} as Record<string, (Document & { isBookmarked: boolean })[]>);
 
     // Format into sections
-    return Object.entries(docsByCategory).map(([category, docs]) => ({
-      title: category,
-      items: docs.map(doc => ({
-        title: doc.title,
-        description: doc.content.split('\n')[2] || "No description available",
-        path: `/docs${doc.path}`,
-        tags: doc.tags || [],
-        category: doc.category?.name || 'Uncategorized',
-        isBookmarked: doc.isBookmarked,
-      }))
-    }));
+    return Object.entries(docsByCategory)
+      .sort(([a], [b]) => a.localeCompare(b))  // Sort categories alphabetically
+      .map(([category, docs]) => ({
+        title: category,
+        id: category.toLowerCase().replace(/\s+/g, '-'),  // Add ID for scrolling
+        items: docs.map(doc => ({
+          id: doc.id,
+          title: doc.title,
+          description: doc.content.split('\n')[2] || "No description available",
+          path: doc.path.startsWith('/') ? `/docs${doc.path}` : `/docs/${doc.path}`,
+          tags: doc.tags || [],
+          category: doc.category?.name || 'Uncategorized',
+          isBookmarked: doc.isBookmarked,
+        }))
+      }));
   }
 
   async createDoc(doc: Partial<Document>): Promise<Document> {
@@ -162,5 +168,34 @@ export class DocsService {
         this.bookmarkRepository.update({ id, userId }, { order_index: index }),
       ),
     );
+  }
+
+  async getDocByPath(path: string): Promise<Document | null> {
+    return this.documentRepository.findOne({ where: { path } });
+  }
+
+  async createDocument(doc: {
+    id: string;
+    title: string;
+    content: string;
+    path: string;
+    tags: string[];
+    categoryId: string;
+    metadata: any;
+  }): Promise<Document> {
+    const document = this.documentRepository.create(doc);
+    return this.documentRepository.save(document);
+  }
+
+  async createSection(section: {
+    id: string;
+    documentId: string;
+    title: string;
+    content: string;
+    level: number;
+    order_index: number;
+  }): Promise<DocumentSection> {
+    const docSection = this.sectionRepository.create(section);
+    return this.sectionRepository.save(docSection);
   }
 }

@@ -136,7 +136,12 @@ const filteredTopics = computed(() => {
 
 // Navigation handlers
 const navigateToTopic = (topic: { path: string }) => {
-  router.push(topic.path);
+  // Remove any existing /docs prefix and add it once
+  const cleanPath = topic.path.replace(/^\/docs/, "");
+  const normalizedPath = cleanPath.startsWith("/")
+    ? `/docs${cleanPath}`
+    : `/docs/${cleanPath}`;
+  router.push(normalizedPath);
   emit("close");
 };
 

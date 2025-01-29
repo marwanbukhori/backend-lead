@@ -71,6 +71,54 @@ export class DocsController {
     return this.docsService.updateBookmarkOrder(req.user.id, bookmarkIds);
   }
 
+  @Get('by-id/:id')
+  @ApiOperation({ summary: 'Get a document by ID' })
+  async getDocById(@Param('id') id: string) {
+    try {
+      const doc = await this.docsService.getDocById(id);
+      if (!doc) {
+        throw new NotFoundException(`Document not found with id: ${id}`);
+      }
+      return doc;
+    } catch (error) {
+      console.error('Error fetching document by ID:', error);
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Error fetching document');
+    }
+  }
+
+  @Put('by-id/:id')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update a document by ID' })
+  async updateDocById(@Param('id') id: string, @Body() doc: any) {
+    console.log('Updating document with ID:', id);
+    console.log('Update payload:', JSON.stringify(doc, null, 2));
+
+    try {
+      // First check if document exists
+      const document = await this.docsService.getDocById(id);
+      console.log('Found existing document:', JSON.stringify(document, null, 2));
+
+      // Update the document
+      const updatedDoc = await this.docsService.updateDocById(id, doc);
+      console.log('Document updated successfully:', JSON.stringify(updatedDoc, null, 2));
+      return updatedDoc;
+    } catch (error) {
+      console.error('Detailed error:', {
+        message: error.message,
+        stack: error.stack,
+        details: error
+      });
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new InternalServerErrorException(`Error updating document: ${error.message}`);
+    }
+  }
+
   @Get(':path(*)')
   @ApiOperation({ summary: 'Get a document by path' })
   async getDoc(@Param('path') path: string) {

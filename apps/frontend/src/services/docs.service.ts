@@ -28,6 +28,7 @@ export interface TableOfContentsItem {
   path: string;
   tags: string[];
   isBookmarked?: boolean;
+  created_at: string;
 }
 
 export interface TableOfContentsSection {
@@ -46,6 +47,15 @@ export interface Bookmark {
   updated_at: string;
 }
 
+export interface Category {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  order_index: number;
+  is_visible: boolean;
+}
+
 export const docsService = {
   async getAllDocs(): Promise<Document[]> {
     const response = await apiClient.get('/docs');
@@ -59,8 +69,15 @@ export const docsService = {
   },
 
   async getDoc(path: string): Promise<Document> {
-    const cleanPath = path.replace('/docs', '');
-    const response = await apiClient.get(`/docs${cleanPath}`);
+    // Remove /docs prefix if it exists and ensure path starts with /
+    const cleanPath = path.replace(/^\/docs/, '');
+    const normalizedPath = cleanPath.startsWith('/') ? cleanPath : `/${cleanPath}`;
+    const response = await apiClient.get(`/docs${normalizedPath}`);
+    return response.data;
+  },
+
+  async getDocById(id: string): Promise<Document> {
+    const response = await apiClient.get(`/docs/by-id/${id}`);
     return response.data;
   },
 
@@ -104,15 +121,102 @@ export const docsService = {
     return Object.entries(docsByCategory).map(([category, docs]) => ({
       title: category,
       id: category,
-      items: docs.map(doc => ({
-        id: doc.id,
-        title: doc.title,
-        description: doc.category?.description || '',
-        path: `/docs${doc.path}`,
-        tags: Array.isArray(doc.tags) ? doc.tags : doc.tags.split(','),
-        category: doc.category?.name || 'Uncategorized',
-        isBookmarked: bookmarkedDocIds.has(doc.id),
-      }))
+      items: docs.map(doc => {
+        // Format the created_at date
+        const date = new Date(doc.created_at);
+        const formattedDate = date.toLocaleString('en-US', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: false
+        });
+
+        return {
+          id: doc.id,
+          title: doc.title,
+          description: doc.category?.description || '',
+          path: doc.path,
+          tags: Array.isArray(doc.tags) ? doc.tags : doc.tags.split(','),
+          category: doc.category?.name || 'Uncategorized',
+          isBookmarked: bookmarkedDocIds.has(doc.id),
+          created_at: formattedDate
+        };
+      })
     }));
+  },
+
+  async createDocument(doc: {
+    title: string;
+    content: string;
+    categoryId: string;
+    tags: string[];
+  }): Promise<Document> {
+    const { title, categoryId } = doc;
+
+    // Get category to use its name in the path
+    const categories = await this.getCategories();
+    const category = categories.find(c => c.id === categoryId);
+    if (!category) {
+      throw new Error('Category not found');
+    }
+
+    // Generate path using category slug and document title WITHOUT /docs prefix
+    const documentSlug = title.toLowerCase().replace(/\s+/g, '-');
+    const path = `/${category.slug}/${documentSlug}`;
+
+    const response = await apiClient.post('/docs', {
+      ...doc,
+      id: crypto.randomUUID(),
+      path,
+      metadata: {
+        createdAt: new Date().toISOString(),
+        lastModified: new Date().toISOString()
+      }
+    });
+    return response.data;
+  },
+
+  async updateDocument(id: string, doc: {
+    title: string;
+    content: string;
+    categoryId: string;
+    tags: string[];
+  }): Promise<Document> {
+    // Get category to update path
+    const categories = await this.getCategories();
+    const category = categories.find(c => c.id === doc.categoryId);
+    if (!category) {
+      throw new Error('Category not found');
+    }
+
+    // Generate new path WITHOUT /docs prefix
+    const documentSlug = doc.title.toLowerCase().replace(/\s+/g, '-');
+    const path = `/${category.slug}/${documentSlug}`;
+
+    const updatePayload = {
+      ...doc,
+      path,
+      sections: [{
+        title: doc.title,
+        content: doc.content,
+        level: 1,
+        order_index: 0
+      }]
+    };
+
+    const updateResponse = await apiClient.put(`/docs/by-id/${id}`, updatePayload);
+    return updateResponse.data;
+  },
+
+  async deleteDocument(id: string): Promise<void> {
+    await apiClient.delete(`/docs/${id}`);
+  },
+
+  async getCategories(): Promise<Category[]> {
+    const response = await apiClient.get('/docs/categories');
+    return response.data;
   }
 }

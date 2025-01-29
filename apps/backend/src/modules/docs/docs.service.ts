@@ -5,6 +5,7 @@ import { Document } from './entities/document.entity';
 import { Category } from './entities/category.entity';
 import { DocumentSection } from './entities/document-section.entity';
 import { Bookmark } from './entities/bookmark.entity';
+import * as crypto from 'crypto';
 
 interface TableOfContentsItem {
   id: string;
@@ -53,8 +54,11 @@ export class DocsService {
   }
 
   async getDoc(path: string): Promise<Document> {
+    // Remove /docs prefix if it exists
+    const cleanPath = path.replace(/^\/docs/, '');
+
     const doc = await this.documentRepository.findOne({
-      where: { path },
+      where: { path: cleanPath },
       relations: ['category', 'sections'],
     });
 
@@ -109,7 +113,8 @@ export class DocsService {
           id: doc.id,
           title: doc.title,
           description: doc.content.split('\n')[2] || "No description available",
-          path: doc.path.startsWith('/') ? `/docs${doc.path}` : `/docs/${doc.path}`,
+          // Store path without /docs prefix, it will be added by the frontend
+          path: doc.path.replace(/^\/docs/, ''),
           tags: doc.tags || [],
           category: doc.category?.name || 'Uncategorized',
           isBookmarked: doc.isBookmarked,
@@ -121,9 +126,29 @@ export class DocsService {
     return this.documentRepository.save(doc);
   }
 
-  async updateDoc(path: string, doc: Partial<Document>): Promise<Document> {
+  async updateDoc(path: string, doc: Partial<Document> & { sections?: Array<{
+    title: string;
+    content: string;
+    level: number;
+    order_index: number;
+  }> }): Promise<Document> {
     const existingDoc = await this.getDoc(path);
     const updatedDoc = { ...existingDoc, ...doc };
+
+    // If sections are provided, update them
+    if (doc.sections) {
+      // Delete existing sections
+      await this.sectionRepository.delete({ documentId: existingDoc.id });
+
+      // Create new sections
+      const sections = doc.sections.map(section => ({
+        ...section,
+        id: crypto.randomUUID(),
+        documentId: existingDoc.id
+      }));
+      await this.sectionRepository.save(sections);
+    }
+
     return this.documentRepository.save(updatedDoc);
   }
 
@@ -197,5 +222,81 @@ export class DocsService {
   }): Promise<DocumentSection> {
     const docSection = this.sectionRepository.create(section);
     return this.sectionRepository.save(docSection);
+  }
+
+  async getDocById(id: string): Promise<Document> {
+    const doc = await this.documentRepository.findOne({
+      where: { id },
+      relations: ['category', 'sections'],
+    });
+
+    if (!doc) {
+      throw new NotFoundException(`Document not found with id: ${id}`);
+    }
+
+    // Increment views
+    doc.views += 1;
+    await this.documentRepository.save(doc);
+
+    return doc;
+  }
+
+  async updateDocById(id: string, doc: Partial<Document> & { sections?: Array<{
+    title: string;
+    content: string;
+    level: number;
+    order_index: number;
+  }> }): Promise<Document> {
+    console.log('Service: Updating document with ID:', id);
+
+    const document = await this.documentRepository.findOne({
+      where: { id },
+      relations: ['category', 'sections']
+    });
+
+    if (!document) {
+      throw new NotFoundException(`Document not found with id: ${id}`);
+    }
+
+    try {
+      // 1. Update the document
+      const { sections: _, ...docWithoutSections } = doc;
+      await this.documentRepository
+        .createQueryBuilder()
+        .update(Document)
+        .set(docWithoutSections)
+        .where("id = :id", { id })
+        .execute();
+
+      // 2. Update the section with document's new title/content
+      if (document.sections?.[0]) {
+        const sectionUpdate = {
+          // Use document's new title and content for the section
+          title: doc.title || document.title,
+          content: doc.content || document.content,
+          // Keep existing level and order if not provided
+          level: document.sections[0].level,
+          order_index: document.sections[0].order_index
+        };
+
+        console.log('Updating section with:', sectionUpdate);
+
+        await this.sectionRepository
+          .createQueryBuilder()
+          .update(DocumentSection)
+          .set(sectionUpdate)
+          .where("document_id = :docId", { docId: id })
+          .execute();
+      }
+
+      // 3. Return updated document with sections
+      return this.documentRepository.findOne({
+        where: { id },
+        relations: ['category', 'sections']
+      });
+    } catch (error) {
+      console.error('Service: Error details:', error);
+      throw error;
+    }
   }
 }
